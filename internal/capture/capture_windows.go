@@ -28,6 +28,9 @@ const (
 	// antiCheatPrefix starts the file names of Easy Anti-Cheat's programs
 	// (EasyAntiCheat.exe, EasyAntiCheat_EOS.exe).
 	antiCheatPrefix = "easyanticheat"
+
+	// The game keeps Python's stdout open after Python dies.
+	outputDrainWait = 2 * time.Second
 )
 
 // helperScripts: Windows spawns the game with the run shim, or attaches to a
@@ -88,6 +91,7 @@ func (r *Runner) startEngine(ctx context.Context, exePath, session string, timeo
 
 	cmd := exec.CommandContext(ctx, r.pythonExe(), args...)
 	cmd.Dir = r.rootDir
+	cmd.WaitDelay = outputDrainWait
 	r.runCaptureCommand(ctx, cmd)
 }
 
