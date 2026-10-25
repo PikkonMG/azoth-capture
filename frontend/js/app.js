@@ -577,6 +577,25 @@
     try { video = await api.ToggleVideo(); paintVideo(); } catch (e) { fail(e); }
   }
 
+  // ---- right column tabs ------------------------------------------------------------
+  // Missions, Settings and AI marks share the right column; one shows at a
+  // time. The choice is remembered on this PC.
+  const TAB_KEY = "azoth.rightTab";
+  function showTab(id) {
+    document.querySelectorAll(".tabs [data-tab]").forEach((b) => {
+      const on = b.dataset.tab === id;
+      b.setAttribute("aria-selected", on);
+      $(b.dataset.tab).classList.toggle("tab-off", !on);
+    });
+    try { localStorage.setItem(TAB_KEY, id); } catch (e) { /* storage blocked: the tab still works */ }
+  }
+  function wireTabs() {
+    document.querySelectorAll(".tabs [data-tab]").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+    let saved = "missions";
+    try { saved = localStorage.getItem(TAB_KEY) || saved; } catch (e) { /* use the first tab */ }
+    showTab($(saved) ? saved : "missions");
+  }
+
   // ---- upload zip -----------------------------------------------------------------
   // paintUpload shows the zip the app made after Stop (and again after each
   // change to steps.json), with anything the upload site would reject.
@@ -654,6 +673,8 @@
     // this moment: settings and saved drafts work without it.
     const ready = !!ai && !!video;
     $("ai-panel").hidden = !ready;
+    $("tab-ai").hidden = !ready;
+    if (!ready && $("tab-ai").getAttribute("aria-selected") === "true") showTab("missions");
     const stopped = S && S.phase === "stopped";
     $("ai-review").hidden = !ready || !stopped || !(ai.running || ai.result || ai.error);
     if (!ready) return;
@@ -744,7 +765,7 @@
     img.addEventListener("click", () => img.classList.toggle("big"));
     if (aiThumbs.has(d.id)) img.src = aiThumbs.get(d.id);
     else api.AIFrame(d.id).then((src) => { // "" once the frame was cleaned up
-      if (!src) { img.hidden = true; return; }
+      if (!src) { img.classList.add("gone"); return; } // keeps its column, so the row does not shift
       aiThumbs.set(d.id, src); img.src = src;
     }).catch(fail);
     const inp = h("input", { type: "text", maxlength: "500", spellcheck: "false", autocomplete: "off", "aria-label": "Draft text" });
@@ -918,6 +939,7 @@
     B.bus.on("capstatus", (st) => updateCapStatus(st));
     B.bus.on("video", (st) => { video = st; paintVideo(); paintAI(); });
     wireAI();
+    wireTabs();
   }
 
   function paintDir() {

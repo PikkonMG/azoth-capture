@@ -148,6 +148,12 @@
 
         <!-- right: missions + settings -->
         <div class="col">
+          <!-- one panel at a time, so the window fits without scrolling -->
+          <div class="tabs" role="tablist" aria-label="Right panel">
+            <button type="button" role="tab" data-tab="missions" aria-selected="true">Missions</button>
+            <button type="button" role="tab" data-tab="settings" aria-selected="false">Settings</button>
+            <button type="button" role="tab" data-tab="ai-panel" aria-selected="false" id="tab-ai">AI marks</button>
+          </div>
           <section class="panel" id="missions">
             <h2>Missions <small>optional</small></h2>
             <div class="row">
