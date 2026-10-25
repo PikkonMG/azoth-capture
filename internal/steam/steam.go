@@ -209,6 +209,35 @@ func GameRunning() bool {
 	return exec.Command("pgrep", "-x", GameProcess).Run() == nil
 }
 
+// RunningExe returns the Linux path of the NewWorld.exe file the running game
+// was started from. Under Proton its command line names it the Windows way
+// ("Z:\mnt\...\NewWorld.exe", where Z: is the Linux root).
+func RunningExe() (string, error) {
+	out, err := exec.Command("pgrep", "-x", GameProcess).Output()
+	if err != nil {
+		return "", fmt.Errorf("New World is not running")
+	}
+	pid := strings.Fields(string(out))[0]
+	cmdline, err := os.ReadFile(filepath.Join("/proc", pid, "cmdline"))
+	if err != nil {
+		return "", err
+	}
+	exe, _, _ := strings.Cut(string(cmdline), "\x00")
+	p, ok := linuxPath(exe)
+	if !ok || !fileExists(p) {
+		return "", fmt.Errorf("cannot find the running game's file from %q", exe)
+	}
+	return p, nil
+}
+
+// linuxPath turns a Wine "Z:\..." path into a Linux path.
+func linuxPath(winPath string) (string, bool) {
+	if len(winPath) < 3 || !strings.EqualFold(winPath[:3], `Z:\`) {
+		return "", false
+	}
+	return "/" + strings.ReplaceAll(winPath[3:], `\`, "/"), true
+}
+
 func fileExists(p string) bool {
 	fi, err := os.Stat(p)
 	return err == nil && !fi.IsDir()

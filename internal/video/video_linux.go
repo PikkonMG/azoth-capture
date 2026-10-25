@@ -36,7 +36,6 @@ const (
 	clipMaxSize   = "1920x1080"
 	clipQuality   = "high"
 	clipContainer = "mkv"
-	noAudio       = "none"
 	portalTarget  = "portal" // the recorder's -w value for the desktop's window picker
 	// gameNameMatch is matched against program names in the recorder's
 	// application-audio list, lower case with spaces removed ("New World").
@@ -75,8 +74,9 @@ func (r recorder) query(args ...string) (string, error) {
 }
 
 // Probe reports whether video can be recorded, whether the player can pick
-// one window, and which monitors exist.
-func Probe() Info {
+// one window, and which monitors exist. GPU Screen Recorder comes from the
+// distribution, so toolsDir is not used.
+func Probe(string) Info {
 	rec, ok := findRecorder()
 	if !ok {
 		return Info{Reason: InstallHint}
@@ -102,7 +102,7 @@ func Probe() Info {
 	if len(monitors) == 0 && !window {
 		return Info{Reason: "GPU Screen Recorder found nothing to record."}
 	}
-	return Info{Available: true, WindowCapture: window, Monitors: monitors}
+	return Info{Available: true, WindowCapture: window, NeedsPick: window, Sound: true, Monitors: monitors}
 }
 
 // gameAudioName returns the name of New World in the recorder's list of
@@ -263,6 +263,9 @@ func (r *Recording) Stop() (Clip, error) {
 	}
 	return r.clip, nil
 }
+
+// Install cannot install GPU Screen Recorder: it comes from the distribution.
+func Install(string, func(string)) error { return errors.New(InstallHint) }
 
 // PickWindow opens the desktop's "choose what to share" dialog so the player
 // can pick the game window once. The choice is remembered in tokenPath, so

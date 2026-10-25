@@ -2,32 +2,15 @@ package video
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 )
 
 const (
-	clipPrefix = "gameplay-"
-	clipExt    = ".mkv"
-	maxClips   = 999
 	// timestampExt is what GPU Screen Recorder appends to the video file name
 	// for its first-frame timestamp file.
 	timestampExt = ".ts"
-	usPerMs      = 1000
 )
-
-// nextClipPath returns the first free gameplay-NNN.mkv path in dir.
-func nextClipPath(dir string) (string, error) {
-	for n := 1; n <= maxClips; n++ {
-		p := filepath.Join(dir, fmt.Sprintf("%s%03d%s", clipPrefix, n, clipExt))
-		if _, err := os.Stat(p); os.IsNotExist(err) {
-			return p, nil
-		}
-	}
-	return "", fmt.Errorf("this session already has %d video clips", maxClips)
-}
 
 // parseFirstFrame reads a GPU Screen Recorder timestamp file: a header line
 // ("monotonic_microsec<TAB>realtime_microsec") and a line of two numbers. It

@@ -135,6 +135,26 @@ func (r *Runner) startEngine(ctx context.Context, exePath, session string, timeo
 	r.runCaptureCommand(ctx, cmd)
 }
 
+// gameExe returns the file the hooks are cut from. The Linux capture attaches
+// to the game Steam started, so that is the file: the running game's own, or
+// before it starts, the one in Steam's install. The path in Settings is used
+// only when neither is found. A wrong file makes the memory check refuse to
+// hook, so this picks the file that is really running.
+func (r *Runner) gameExe(chosen string) string {
+	exe, err := steam.RunningExe()
+	if err != nil {
+		g, derr := steam.Discover()
+		if derr != nil {
+			return chosen
+		}
+		exe = g.ExePath
+	}
+	if exe != chosen {
+		r.log("Using the game Steam runs: " + exe + " (Settings has " + chosen + ").")
+	}
+	return exe
+}
+
 // hookSite is one function the agent will hook, with the bytes the executable
 // file has at its start. The attach helper checks the running game's memory
 // against these before any hook is placed.

@@ -87,7 +87,7 @@ const settle = 300 * time.Millisecond
 
 func TestProbeWithoutRecorder(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
-	info := Probe()
+	info := Probe("")
 	if info.Available || info.Reason != InstallHint {
 		t.Fatalf("Probe = %+v, want unavailable with the install hint", info)
 	}
@@ -95,13 +95,13 @@ func TestProbeWithoutRecorder(t *testing.T) {
 
 func TestProbe(t *testing.T) {
 	installFake(t)
-	info := Probe()
+	info := Probe("")
 	want := []Monitor{{"DP-1", "1920x1080"}, {"HDMI-A-1", "2560x1440"}}
 	if !info.Available || !info.WindowCapture || len(info.Monitors) != 2 || info.Monitors[0] != want[0] || info.Monitors[1] != want[1] {
 		t.Fatalf("Probe = %+v", info)
 	}
 	t.Setenv("FAKE_PORTAL", "0")
-	if Probe().WindowCapture {
+	if Probe("").WindowCapture {
 		t.Error("window capture reported without the portal")
 	}
 }

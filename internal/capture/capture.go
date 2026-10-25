@@ -238,6 +238,7 @@ func (r *Runner) StartCapture(exePath, session string, timeout int, onePerEP boo
 	if _, err := os.Stat(r.captureScript()); err != nil {
 		return fmt.Errorf("capture tools not found, run Install first")
 	}
+	exePath = r.gameExe(exePath)
 	if _, err := os.Stat(exePath); err != nil {
 		return fmt.Errorf("game executable not found: %s", exePath)
 	}

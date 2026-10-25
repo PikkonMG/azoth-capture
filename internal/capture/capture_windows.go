@@ -37,6 +37,10 @@ func (r *Runner) runInstaller() error {
 
 // startEngine on Windows launches the game itself under Frida (with the
 // anti-cheat absent) and records until the timeout or Stop.
+// gameExe returns the file the hooks are cut from. Windows launches the
+// executable the player chose, so it is that one.
+func (r *Runner) gameExe(chosen string) string { return chosen }
+
 func (r *Runner) startEngine(ctx context.Context, exePath, session string, timeout int, onePerEP bool, setup hookSetup) {
 	args := []string{
 		setup.shim, r.captureDir(), setup.patched,
