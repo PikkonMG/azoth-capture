@@ -460,7 +460,7 @@
   function captureHotkey(btnId, valId, set, apply) {
     if (capturing) return;
     capturing = true;
-    const btn = $(btnId), err = $("s-err");
+    const btn = $(btnId), err = btn.closest(".kv").querySelector(".err"); // the error line of this key's tab
     err.hidden = true;
     btn.textContent = "Press keys…";
     $(valId).textContent = "Press the new combination (Esc cancels)";

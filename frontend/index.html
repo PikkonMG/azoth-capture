@@ -152,6 +152,7 @@
           <div class="tabs" role="tablist" aria-label="Right panel">
             <button type="button" role="tab" data-tab="missions" aria-selected="true">Missions</button>
             <button type="button" role="tab" data-tab="settings" aria-selected="false">Settings</button>
+            <button type="button" role="tab" data-tab="video-panel" aria-selected="false">Video</button>
             <button type="button" role="tab" data-tab="ai-panel" aria-selected="false" id="tab-ai">AI marks</button>
           </div>
           <section class="panel" id="missions">
@@ -174,6 +175,16 @@
               <label>Folder</label>
               <div class="val" id="s-dir" title=""></div>
               <button class="btn small" id="btn-dir" type="button">Browse</button>
+              <div class="err" id="s-err" hidden></div>
+            </div>
+            <div class="retry-row" id="retry-row" hidden>
+              <button class="btn small" id="btn-retry" type="button">Retry environment setup</button>
+            </div>
+          </section>
+
+          <section class="panel" id="video-panel">
+            <h2>Video <small>optional</small></h2>
+            <div class="kv">
               <label class="video-row" hidden>Video</label>
               <div class="val video-row" id="s-video" hidden>Off</div>
               <button class="btn small video-row" id="btn-video-allow" type="button" hidden>Turn on</button>
@@ -208,10 +219,7 @@
               <div class="val video-opt" id="s-vhotkey" hidden>F9</div>
               <button class="btn small video-opt" id="btn-vhk" type="button" hidden>Change</button>
               <div class="note video-row" id="s-video-note" hidden></div>
-              <div class="err" id="s-err" hidden></div>
-            </div>
-            <div class="retry-row" id="retry-row" hidden>
-              <button class="btn small" id="btn-retry" type="button">Retry environment setup</button>
+              <div class="err" hidden></div>
             </div>
           </section>
 
