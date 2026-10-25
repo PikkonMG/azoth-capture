@@ -144,26 +144,28 @@ func (p *progressWriter) Write(b []byte) (int, error) {
 }
 
 var (
-	encoderOnce sync.Once
-	chosen      encoder
-	encoderErr  error
+	encoderMu sync.Mutex
+	working   = map[string]encoder{} // chosen format -> the encoder that worked
 )
 
-// pickEncoder tests the encoders once and keeps the first that works here.
-func pickEncoder(ffmpeg string) (encoder, error) {
-	encoderOnce.Do(func() {
-		for _, e := range encoders {
-			ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
-			err := proc.Hidden(exec.CommandContext(ctx, ffmpeg, encoderTestArgs(e)...)).Run()
-			cancel()
-			if err == nil {
-				chosen = e
-				return
-			}
+// pickEncoder tests the encoders for a chosen format, in order, and keeps
+// the first that works on this PC for the next clips.
+func pickEncoder(ffmpeg, codec string) (encoder, error) {
+	encoderMu.Lock()
+	defer encoderMu.Unlock()
+	if e, ok := working[codec]; ok {
+		return e, nil
+	}
+	for _, e := range encodersFor(codec) {
+		ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
+		err := proc.Hidden(exec.CommandContext(ctx, ffmpeg, encoderTestArgs(e)...)).Run()
+		cancel()
+		if err == nil {
+			working[codec] = e
+			return e, nil
 		}
-		encoderErr = errors.New("ffmpeg has no H.264 encoder that works on this PC")
-	})
-	return chosen, encoderErr
+	}
+	return encoder{}, errors.New("ffmpeg has no video encoder that works on this PC")
 }
 
 // Recording is one clip being recorded.
@@ -185,9 +187,13 @@ func Start(dir string, opt Options, logf func(string)) (*Recording, error) {
 	if err != nil {
 		return nil, err
 	}
-	enc, err := pickEncoder(ffmpeg)
+	chosen := codecOr(opt.Codec)
+	enc, err := pickEncoder(ffmpeg, chosen)
 	if err != nil {
 		return nil, err
+	}
+	if chosen != CodecAuto && enc.codec != chosen {
+		logf("Video: this PC cannot record " + chosen + "; recording " + enc.codec + " instead.")
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, err
@@ -200,7 +206,7 @@ func Start(dir string, opt Options, logf func(string)) (*Recording, error) {
 		logf("Video: Windows clips have no sound.")
 	}
 
-	cmd := proc.Hidden(exec.Command(ffmpeg, recordArgs(gfxcaptureSource(), enc, path)...))
+	cmd := proc.Hidden(exec.Command(ffmpeg, recordArgs(gfxcaptureSource(), enc, opt.Quality, path)...))
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, err

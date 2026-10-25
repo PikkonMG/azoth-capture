@@ -264,7 +264,11 @@ input:disabled,select:disabled{background:var(--face-2);color:var(--ink-3)}
 .aireview h3 .grow{flex:1}
 .drafts{display:flex;flex-direction:column;gap:4px;max-height:420px;overflow:auto;padding:3px;background:var(--paper);box-shadow:var(--sunken)}
 .drafts .empty{padding:14px 10px;color:var(--ink-3);font-size:12px}
-.draft{display:grid;grid-template-columns:160px minmax(0,1fr) auto;gap:10px;align-items:center;padding:4px;font-size:12px}
+.draftbar{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+.draftbar .check-field{padding-bottom:0}
+.draftbar .grow{flex:1;font-size:12px;color:var(--ink-3)}
+.draft{display:grid;grid-template-columns:18px 160px minmax(0,1fr) auto;gap:10px;align-items:center;padding:4px;font-size:12px}
+.draft .pick{margin:0;width:15px;height:15px;accent-color:var(--accent)}
 .draft:nth-child(even){background:rgba(30,36,41,.045)}
 .draft img{width:160px;height:90px;object-fit:cover;box-shadow:var(--etched);background:var(--face-2);cursor:zoom-in}
 .draft img.big{position:fixed;inset:5%;width:90%;height:90%;object-fit:contain;z-index:70;background:var(--ink-deep);cursor:zoom-out}

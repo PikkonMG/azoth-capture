@@ -19,7 +19,7 @@ export function CancelAIMarks():Promise<main.AIStatus>;
 
 export function CaptureStatus():Promise<string>;
 
-export function DecideAIDraft(arg1:number,arg2:boolean,arg3:string):Promise<main.AIStatus>;
+export function DecideAIDrafts(arg1:Array<main.AIDecision>):Promise<main.AIStatus>;
 
 export function DeleteStep(arg1:number):Promise<journal.State>;
 
@@ -55,6 +55,8 @@ export function OpenSendDir():Promise<void>;
 
 export function OpenSession():Promise<journal.State>;
 
+export function OpenUploadPage():Promise<void>;
+
 export function OpenUploadZip():Promise<void>;
 
 export function PickAIDataDir():Promise<main.AIStatus>;
@@ -82,6 +84,8 @@ export function SetTargets(arg1:Array<number>):Promise<journal.State>;
 export function SetVideoAllowed(arg1:boolean):Promise<main.VideoStatus>;
 
 export function SetVideoAudio(arg1:string):Promise<main.VideoStatus>;
+
+export function SetVideoFormat(arg1:string,arg2:string):Promise<main.VideoStatus>;
 
 export function SetVideoHotkey(arg1:string):Promise<main.VideoStatus>;
 

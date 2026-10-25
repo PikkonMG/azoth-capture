@@ -541,6 +541,8 @@
     }
     sel.value = win ? "" : video.target;
     $("s-video-audio").value = video.audio;
+    $("s-video-codec").value = video.codec;
+    $("s-video-quality").value = video.quality;
     $("s-vhotkey").textContent = video.hotkey;
     $("vhk-label").textContent = video.hotkey;
 
@@ -691,6 +693,7 @@
       aiRows.clear();
       aiThumbs.clear(); // draft ids start again at 1 in the next run
       box.replaceChildren(h("div", { class: "empty", text: ai.running ? "Working…" : "No drafts." }));
+      $("ai-bulk").hidden = true;
       return;
     }
     if (box.querySelector(".empty")) box.replaceChildren();
@@ -699,11 +702,41 @@
     drafts.forEach((d, i) => {
       let el = aiRows.get(d.id);
       if (!el) { el = makeDraft(d); aiRows.set(d.id, el); }
+      const pending = d.status === "pending";
       el.dataset.status = d.status;
-      el.querySelectorAll(".acts button").forEach((b) => { b.disabled = d.status !== "pending"; });
-      el.querySelector("input").disabled = d.status !== "pending";
+      el.querySelectorAll(".acts button").forEach((b) => { b.disabled = !pending; });
+      el.querySelector("input[type=text]").disabled = !pending;
+      const pick = el.querySelector(".pick");
+      pick.disabled = !pending;
+      if (!pending) pick.checked = false;
       if (box.children[i] !== el) box.insertBefore(el, box.children[i] || null);
     });
+    paintSelection();
+  }
+
+  // pendingPicks are the check boxes of the drafts still waiting for a verdict.
+  const pendingPicks = () => [...$("ai-drafts").querySelectorAll(".pick:not(:disabled)")];
+
+  function paintSelection() {
+    const picks = pendingPicks(), n = picks.filter((p) => p.checked).length;
+    $("ai-bulk").hidden = !picks.length;
+    $("ai-selected-count").textContent = n + " of " + picks.length + " waiting drafts selected";
+    $("ai-select-all").checked = picks.length > 0 && n === picks.length;
+    $("ai-select-all").indeterminate = n > 0 && n < picks.length;
+    $("btn-ai-accept-sel").disabled = $("btn-ai-reject-sel").disabled = !n;
+  }
+
+  // decideDrafts sends verdicts for many drafts in one call.
+  function decideDrafts(decisions) {
+    return api.DecideAIDrafts(decisions).then((st) => { ai = st; paintAI(); }).catch(fail);
+  }
+
+  function decideSelected(accept) {
+    const decisions = pendingPicks().filter((p) => p.checked).map((p) => {
+      const row = p.closest(".draft");
+      return { id: Number(row.dataset.id), accept, text: row.querySelector("input[type=text]").value.trim() };
+    });
+    if (decisions.length) decideDrafts(decisions);
   }
 
   function makeDraft(d) {
@@ -716,13 +749,16 @@
     }).catch(fail);
     const inp = h("input", { type: "text", maxlength: "500", spellcheck: "false", autocomplete: "off", "aria-label": "Draft text" });
     inp.value = d.text;
-    const decide = (accept) => api.DecideAIDraft(d.id, accept, inp.value.trim())
-      .then((st) => { ai = st; paintAI(); }).catch(fail);
+    const decide = (accept) => decideDrafts([{ id: d.id, accept, text: inp.value.trim() }]);
+    // Drafts the model is sure about start selected; unsure ones do not.
+    const pick = h("input", { type: "checkbox", class: "pick", "aria-label": "Select this draft" });
+    pick.checked = d.status === "pending" && !d.unsure;
+    pick.addEventListener("change", paintSelection);
     const meta = h("div", { class: "meta" },
       h("span", { text: fmtRel(d.t_ms - S.started_ms) }), h("span", { text: d.kind }),
       h("span", { class: d.unsure ? "unsure" : "", text: Math.round(d.confidence * 100) + "%" + (d.unsure ? " unsure" : "") }));
     meta.title = d.candidates && d.candidates.length ? "Game data: " + d.candidates.join("; ") : "No game data match";
-    return h("div", { class: "draft", role: "listitem" }, img, h("div", {}, meta, inp),
+    return h("div", { class: "draft", role: "listitem", "data-id": String(d.id) }, pick, img, h("div", {}, meta, inp),
       h("div", { class: "acts" },
         h("button", { class: "btn small", type: "button", title: "Add as a step", onclick: () => decide(true) }, "✓"),
         h("button", { class: "btn small", type: "button", title: "Drop", onclick: () => decide(false) }, "✗")));
@@ -785,6 +821,12 @@
     $("btn-ai-models").addEventListener("click", doLoadModels);
     $("btn-ai-datadir").addEventListener("click", () => api.PickAIDataDir().then((st) => { ai = st; aiFormDirty = false; paintAI(); }).catch(fail));
     $("btn-ai-run").addEventListener("click", () => api.RunAIMarks().then((st) => { ai = st; paintAI(); }).catch(fail));
+    $("ai-select-all").addEventListener("change", (e) => {
+      pendingPicks().forEach((p) => { p.checked = e.target.checked; });
+      paintSelection();
+    });
+    $("btn-ai-accept-sel").addEventListener("click", () => decideSelected(true));
+    $("btn-ai-reject-sel").addEventListener("click", () => decideSelected(false));
     $("btn-ai-cancel").addEventListener("click", () => api.CancelAIMarks().then((st) => { ai = st; paintAI(); }).catch(fail));
     B.bus.on("ai", (st) => { ai = st; paintAI(); });
   }
@@ -820,6 +862,7 @@
       } catch (e) { fail(e); }
     });
     $("btn-upload-open").addEventListener("click", () => api.OpenUploadZip().catch(fail));
+    $("btn-upload-page").addEventListener("click", () => api.OpenUploadPage());
     B.bus.on("upload", (up) => paintUpload(up));
     $("btn-parts").addEventListener("click", () => api.OpenPartsDir().catch(fail));
 
@@ -846,6 +889,10 @@
     $("btn-video-pick").addEventListener("click", doPickWindow);
     $("s-video-target").addEventListener("change", (e) => e.target.value && api.SetVideoTarget(e.target.value).then((st) => { video = st; paintVideo(); }).catch(fail));
     $("s-video-audio").addEventListener("change", (e) => api.SetVideoAudio(e.target.value).then((st) => { video = st; paintVideo(); }).catch(fail));
+    const setFormat = () => api.SetVideoFormat($("s-video-codec").value, $("s-video-quality").value)
+      .then((st) => { video = st; paintVideo(); notice("Video format saved; it applies to the next clip."); }).catch(fail);
+    $("s-video-codec").addEventListener("change", setFormat);
+    $("s-video-quality").addEventListener("change", setFormat);
     $("btn-dir").addEventListener("click", async () => {
       try {
         const dir = await api.PickOutputDir();

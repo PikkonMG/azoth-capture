@@ -75,13 +75,39 @@ func TestReadProgressReportsFirstFrameOnce(t *testing.T) {
 	}
 }
 
+// Every format falls back to H.264, and H.264 ends with the CPU encoder,
+// which works on any PC: there is always an encoder to try last.
+func TestEncodersAlwaysFallBack(t *testing.T) {
+	for _, c := range Codecs {
+		list := encodersFor(c)
+		if len(list) == 0 || list[len(list)-1].name != "libx264" {
+			t.Errorf("%s: encoders %v do not end with libx264", c, list)
+		}
+	}
+	if got := encodersFor(CodecHEVC)[0].name; got != "hevc_nvenc" {
+		t.Errorf("HEVC starts with %s", got)
+	}
+	if got := encodersFor(CodecAuto)[0].codec; got != CodecAV1 {
+		t.Errorf("Auto starts with %s, want the most compact format", got)
+	}
+	for _, e := range encoders {
+		for _, q := range Qualities {
+			if e.levels[q] == "" {
+				t.Errorf("%s has no setting for quality %s", e.name, q)
+			}
+		}
+	}
+}
+
 func TestRecordArgs(t *testing.T) {
-	a := recordArgs(gfxcaptureSource(), encoders[0], "/s/gameplay-001.mkv")
+	a := recordArgs(gfxcaptureSource(), encodersFor(CodecHEVC)[0], QualityVeryHigh, "/s/gameplay-001.mkv")
 	src := a[slices.Index(a, "-i")+1]
 	if !strings.HasPrefix(src, "gfxcapture=window_exe=(?i)^NewWorld\\.exe$:") || !strings.HasSuffix(src, ",hwdownload,format=bgra") {
 		t.Errorf("source = %q", src)
 	}
-	if a[len(a)-1] != "/s/gameplay-001.mkv" || !slices.Contains(a, "h264_nvenc") || !slices.Contains(a, "pipe:1") {
+	cq := slices.Index(a, "-cq")
+	if a[len(a)-1] != "/s/gameplay-001.mkv" || !slices.Contains(a, "hevc_nvenc") || !slices.Contains(a, "pipe:1") ||
+		cq < 0 || a[cq+1] != "22" {
 		t.Errorf("args = %q", a)
 	}
 	if slices.ContainsFunc(a, func(s string) bool { return strings.Contains(s, "dshow") || strings.Contains(s, "wasapi") }) {
@@ -101,7 +127,7 @@ func TestRecordStopsOnQ(t *testing.T) {
 		t.Skip("this ffmpeg has no libx264")
 	}
 	out := filepath.Join(t.TempDir(), "clip.mkv")
-	cmd := exec.Command(ffmpeg, recordArgs("testsrc=size=640x360:rate=60", libx264, out)...)
+	cmd := exec.Command(ffmpeg, recordArgs("testsrc=size=640x360:rate=60", libx264, QualityHigh, out)...)
 	stdin, _ := cmd.StdinPipe()
 	stdout, _ := cmd.StdoutPipe()
 	if err := cmd.Start(); err != nil {

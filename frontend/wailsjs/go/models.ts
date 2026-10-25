@@ -150,6 +150,8 @@ export namespace config {
 	    video_target: string;
 	    video_audio: string;
 	    video_hotkey: string;
+	    video_codec: string;
+	    video_quality: string;
 	    ai: AISettings;
 	
 	    static createFrom(source: any = {}) {
@@ -168,6 +170,8 @@ export namespace config {
 	        this.video_target = source["video_target"];
 	        this.video_audio = source["video_audio"];
 	        this.video_hotkey = source["video_hotkey"];
+	        this.video_codec = source["video_codec"];
+	        this.video_quality = source["video_quality"];
 	        this.ai = this.convertValues(source["ai"], AISettings);
 	    }
 	
@@ -353,6 +357,22 @@ export namespace journal {
 
 export namespace main {
 	
+	export class AIDecision {
+	    id: number;
+	    accept: boolean;
+	    text: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AIDecision(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.accept = source["accept"];
+	        this.text = source["text"];
+	    }
+	}
 	export class AIStatus {
 	    settings: config.AISettings;
 	    has_key: boolean;
@@ -408,6 +428,8 @@ export namespace main {
 	    hotkey_error: string;
 	    clips: number;
 	    error: string;
+	    codec: string;
+	    quality: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new VideoStatus(source);
@@ -425,6 +447,8 @@ export namespace main {
 	        this.hotkey_error = source["hotkey_error"];
 	        this.clips = source["clips"];
 	        this.error = source["error"];
+	        this.codec = source["codec"];
+	        this.quality = source["quality"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

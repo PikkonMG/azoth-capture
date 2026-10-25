@@ -381,6 +381,13 @@ until you turn it on. Once it's on, a clip starts with each session.
 On Windows, clips have no sound: ffmpeg can't record one program's sound
 there, and it won't record your whole desktop.
 
+**Video format** and **Video quality** in Settings set how big clips are.
+"Auto" picks the smallest format your graphics card can record (AV1, then
+HEVC, then H.264) at the same quality. If the card can't record the format you
+chose, the app uses the next one and says so in the Activity Log. AV1 clips may
+need a recent player (VLC or mpv); on Windows, the built-in player needs
+Microsoft's free AV1 extension.
+
 Clips land in your session folder as `gameplay-001.mkv` and so on, plus a
 `video.json` with the exact start times so we can line a clip up with the
 packets. Video never goes in the `send` folder, since it can show your name

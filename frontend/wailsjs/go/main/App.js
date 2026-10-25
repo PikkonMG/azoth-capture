@@ -30,8 +30,8 @@ export function CaptureStatus() {
   return window['go']['main']['App']['CaptureStatus']();
 }
 
-export function DecideAIDraft(arg1, arg2, arg3) {
-  return window['go']['main']['App']['DecideAIDraft'](arg1, arg2, arg3);
+export function DecideAIDrafts(arg1) {
+  return window['go']['main']['App']['DecideAIDrafts'](arg1);
 }
 
 export function DeleteStep(arg1) {
@@ -102,6 +102,10 @@ export function OpenSession() {
   return window['go']['main']['App']['OpenSession']();
 }
 
+export function OpenUploadPage() {
+  return window['go']['main']['App']['OpenUploadPage']();
+}
+
 export function OpenUploadZip() {
   return window['go']['main']['App']['OpenUploadZip']();
 }
@@ -156,6 +160,10 @@ export function SetVideoAllowed(arg1) {
 
 export function SetVideoAudio(arg1) {
   return window['go']['main']['App']['SetVideoAudio'](arg1);
+}
+
+export function SetVideoFormat(arg1, arg2) {
+  return window['go']['main']['App']['SetVideoFormat'](arg1, arg2);
 }
 
 export function SetVideoHotkey(arg1) {

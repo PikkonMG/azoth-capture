@@ -94,14 +94,16 @@ func TestDecideAIDraftWritesSteps(t *testing.T) {
 	}}
 	a.ai.result, a.ai.sessionDir = &res, dir
 
-	if _, err := a.DecideAIDraft(1, true, "Mine Iron Vein (Small)"); err != nil {
+	// One batch, as "Accept selected" sends it, then a repeat that must not
+	// change a decided draft.
+	if _, err := a.DecideAIDrafts([]AIDecision{{ID: 1, Accept: true, Text: "Mine Iron Vein (Small)"}, {ID: 2}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.DecideAIDraft(2, false, ""); err != nil {
+	if _, err := a.DecideAIDrafts([]AIDecision{{ID: 1}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.DecideAIDraft(1, false, ""); err != nil {
-		t.Fatal(err)
+	if _, err := a.DecideAIDrafts([]AIDecision{{ID: 9, Accept: true}}); err == nil {
+		t.Error("an unknown draft was decided")
 	}
 
 	b, err := os.ReadFile(filepath.Join(dir, "send", "steps.json"))

@@ -112,19 +112,16 @@ func rate(h HitRate) float64 {
 	return 0
 }
 
-// CountDecision adds one decision to a model's record.
-func CountDecision(dataDir, model, status string) error {
+// CountDecisions adds accepted and rejected drafts to a model's record.
+func CountDecisions(dataDir, model string, accepted, rejected int) error {
 	m, err := readStats(dataDir)
 	if err != nil {
 		return err
 	}
 	h := m[model]
 	h.Model = model
-	if status == StatusAccepted {
-		h.Accepted++
-	} else {
-		h.Rejected++
-	}
+	h.Accepted += accepted
+	h.Rejected += rejected
 	m[model] = h
 	return writeJSON(filepath.Join(dataDir, statsFile), m)
 }

@@ -326,49 +326,78 @@ func (a *App) OpenSession() (journal.State, error) {
 	return st, nil
 }
 
-// DecideAIDraft accepts a draft (with the player's text) as a step, or
-// rejects it. Accepting writes steps.json again, in the send folder too.
-func (a *App) DecideAIDraft(id int, accept bool, text string) (AIStatus, error) {
+// AIDecision is the player's verdict on one draft. Text is the step text
+// to use when accepting; empty keeps the draft's own text.
+type AIDecision struct {
+	ID     int    `json:"id"`
+	Accept bool   `json:"accept"`
+	Text   string `json:"text"`
+}
+
+// DecideAIDrafts accepts or rejects drafts, one or many at once. Accepted
+// drafts become steps; steps.json, the send folder and the upload zip are
+// then written once for the whole batch.
+func (a *App) DecideAIDrafts(decisions []AIDecision) (AIStatus, error) {
 	a.ai.mu.Lock()
 	res, dir := a.ai.result, a.ai.sessionDir
 	if res == nil {
 		a.ai.mu.Unlock()
 		return a.AIState(), errAINoResult
 	}
-	status := aimarks.StatusRejected
-	if accept {
-		status = aimarks.StatusAccepted
+	var accepted []aimarks.Draft
+	var rejected int
+	var err error
+	for _, dec := range decisions {
+		status := aimarks.StatusRejected
+		if dec.Accept {
+			status = aimarks.StatusAccepted
+		}
+		d, changed, derr := res.Decide(dec.ID, status)
+		if derr != nil {
+			err = derr
+			break
+		}
+		if !changed {
+			continue
+		}
+		if dec.Accept {
+			if dec.Text != "" {
+				d.Text = dec.Text
+			}
+			accepted = append(accepted, d)
+		} else {
+			rejected++
+		}
 	}
-	d, changed, err := res.Decide(id, status)
-	if err == nil && changed {
-		err = aimarks.SaveResult(dir, *res)
-	}
-	if err == nil && changed {
+	changed := len(accepted)+rejected > 0
+	if changed {
+		if serr := aimarks.SaveResult(dir, *res); err == nil {
+			err = serr
+		}
 		a.pruneFrames(dir, *res)
 	}
 	model := res.Model
 	a.ai.mu.Unlock()
-	if err != nil || !changed {
+	if !changed {
 		return a.AIState(), err
 	}
-	if err := aimarks.CountDecision(config.DataDir(), model, status); err != nil {
-		a.emit("caplog", "AI marks: could not save the hit rate: "+err.Error())
+	if cerr := aimarks.CountDecisions(config.DataDir(), model, len(accepted), rejected); cerr != nil {
+		a.emit("caplog", "AI marks: could not save the hit rate: "+cerr.Error())
 	}
-	if accept {
-		if text == "" {
-			text = d.Text
+	for _, d := range accepted {
+		if _, aerr := a.j.AddReviewedStep(time.UnixMilli(d.TMs), d.Text); aerr != nil {
+			return a.AIState(), aerr
 		}
-		if _, err := a.j.AddReviewedStep(time.UnixMilli(d.TMs), text); err != nil {
-			return a.AIState(), err
-		}
-		exportDir, err := a.j.Export(a.outputDir())
-		if err != nil {
-			return a.AIState(), fmt.Errorf("the step was added, but steps.json was not written: %w", err)
+	}
+	if len(accepted) > 0 {
+		exportDir, eerr := a.j.Export(a.outputDir())
+		if eerr != nil {
+			return a.AIState(), fmt.Errorf("the steps were added, but steps.json was not written: %w", eerr)
 		}
 		a.refreshUpload(exportDir) // the window hears the result as "upload"
 	}
 	a.emitAI()
-	return a.AIState(), nil
+	return a.AIState(), err
 }
 
 // AIFrame returns a draft's frame as a data URL for the window, or "" when

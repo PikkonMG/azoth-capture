@@ -25,6 +25,7 @@ case "$1" in
   --list-capture-options) printf 'DP-1|1920x1080\nHDMI-A-1|2560x1440\nregion\n'; [ "${FAKE_PORTAL:-1}" = 1 ] && echo portal; exit 0 ;;
   --list-application-audio) printf '%b' "${FAKE_APPS:-Firefox\nNew World\n}"; exit 0 ;;
   --help) echo "usage: gpu-screen-recorder -exclude-metadata yes|no -write-first-frame-ts yes|no"; exit 0 ;;
+  --info) printf 'section=video_codecs\nh264\nhevc\nav1\n'; exit 0 ;;
 esac
 echo "$@" > "$here/args.txt"
 printf '%s\n' "$@" > "$here/argv.txt"
@@ -121,7 +122,8 @@ func TestMonitorClip(t *testing.T) {
 	}
 	args := f.args(t)
 	for _, want := range []string{"-w HDMI-A-1", "-c mkv", "-s 1920x1080", "-a app:New World",
-		"-exclude-metadata yes", "-write-first-frame-ts yes", "-o " + filepath.Join(dir, "gameplay-001.mkv")} {
+		"-exclude-metadata yes", "-write-first-frame-ts yes", "-k av1", "-q high", "-f 60",
+		"-o " + filepath.Join(dir, "gameplay-001.mkv")} {
 		if !strings.Contains(args, want) {
 			t.Errorf("recorder args %q lack %q", args, want)
 		}
@@ -251,6 +253,32 @@ func TestPickWindow(t *testing.T) {
 	}
 	if _, err := os.Stat(token); err == nil {
 		t.Error("the old window choice survived a new pick")
+	}
+}
+
+func TestPickCodec(t *testing.T) {
+	info := "section=system_info\ngsr_version|6.0.1\nsection=video_codecs\nh264\nhevc\nav1\nav1_vulkan\nsection=image_formats\njpeg\n"
+	if got := pickCodec(info, CodecAuto); got != "av1" {
+		t.Errorf("pickCodec = %q, want av1", got)
+	}
+	if got := pickCodec("section=video_codecs\nh264\nhevc_10bit\nhevc\n", CodecAuto); got != "hevc" {
+		t.Errorf("without AV1 pickCodec = %q, want hevc", got)
+	}
+	if got := pickCodec("section=video_codecs\nvp8\nsection=image_formats\nav1\n", CodecAuto); got != "" {
+		t.Errorf("pickCodec = %q; av1 outside the codec section does not count", got)
+	}
+	if got := pickCodec(info, CodecH264); got != "h264" {
+		t.Errorf("chosen H.264 gave %q", got)
+	}
+	// An older NVIDIA or Intel GPU without AV1: the choice falls back.
+	if got := pickCodec("section=video_codecs\nh264\nhevc\n", CodecAV1); got != "hevc" {
+		t.Errorf("chosen AV1 on a GPU without it gave %q, want hevc", got)
+	}
+}
+
+func TestQualityFallsBackToHigh(t *testing.T) {
+	if qualityOr(QualityVeryHigh) != QualityVeryHigh || qualityOr("ultra") != QualityHigh || qualityOr("") != QualityHigh {
+		t.Error("qualityOr must keep a known level and replace anything else with high")
 	}
 }
 

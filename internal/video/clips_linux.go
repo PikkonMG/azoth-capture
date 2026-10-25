@@ -12,6 +12,34 @@ const (
 	timestampExt = ".ts"
 )
 
+// pickCodec returns the chosen format if the GPU can encode it, else the
+// next one in codecOrder, or "" when the --info output names none of them
+// (the recorder then uses its default). At the same quality AV1 makes much
+// smaller files than HEVC, and HEVC smaller than H.264. The recorder lists
+// what this GPU can encode under "section=video_codecs" in --info.
+func pickCodec(info, chosen string) string {
+	var codecs []string
+	inSection := false
+	for _, line := range strings.Split(info, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "section=") {
+			inSection = line == "section=video_codecs"
+			continue
+		}
+		if inSection && line != "" {
+			codecs = append(codecs, line)
+		}
+	}
+	for _, want := range codecOrder(chosen) {
+		for _, have := range codecs {
+			if have == want {
+				return want
+			}
+		}
+	}
+	return ""
+}
+
 // parseFirstFrame reads a GPU Screen Recorder timestamp file: a header line
 // ("monotonic_microsec<TAB>realtime_microsec") and a line of two numbers. It
 // returns the realtime value in Unix milliseconds.

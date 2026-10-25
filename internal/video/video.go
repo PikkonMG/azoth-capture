@@ -51,6 +51,28 @@ type Info struct {
 	CanInstall bool `json:"can_install"`
 }
 
+// Video formats. CodecAuto picks the most compact one the GPU can encode;
+// a format the GPU cannot encode falls back to the next one.
+const (
+	CodecAuto = "auto"
+	CodecAV1  = "av1"
+	CodecHEVC = "hevc"
+	CodecH264 = "h264"
+)
+
+// Codecs are the formats the player can choose, most compact first.
+var Codecs = []string{CodecAuto, CodecAV1, CodecHEVC, CodecH264}
+
+// Quality levels, named as GPU Screen Recorder names them.
+const (
+	QualityMedium   = "medium"
+	QualityHigh     = "high"
+	QualityVeryHigh = "very_high"
+)
+
+// Qualities are the levels the player can choose, lowest first.
+var Qualities = []string{QualityMedium, QualityHigh, QualityVeryHigh}
+
 // HasMonitor reports whether name is one of the monitors.
 func (i Info) HasMonitor(name string) bool {
 	return slices.ContainsFunc(i.Monitors, func(m Monitor) bool { return m.Name == name })
@@ -69,6 +91,38 @@ type Options struct {
 	GameAudio bool
 	// ToolsDir holds the tools the app downloaded (ffmpeg on Windows).
 	ToolsDir string
+	// Codec is one of Codecs and Quality one of Qualities.
+	Codec   string
+	Quality string
+}
+
+// qualityOr returns q when it is one of Qualities, else QualityHigh.
+func qualityOr(q string) string {
+	if slices.Contains(Qualities, q) {
+		return q
+	}
+	return QualityHigh
+}
+
+// codecOr returns c when it is one of Codecs, else CodecAuto.
+func codecOr(c string) string {
+	if slices.Contains(Codecs, c) {
+		return c
+	}
+	return CodecAuto
+}
+
+// codecOrder is the list of formats to try for a chosen one: the chosen
+// format first, then the more widely supported ones after it. CodecAuto
+// tries them all, most compact first.
+func codecOrder(chosen string) []string {
+	all := Codecs[1:]
+	for i, c := range all {
+		if c == chosen {
+			return all[i:]
+		}
+	}
+	return all
 }
 
 // Clip describes one recorded file. Times are Unix milliseconds on the PC

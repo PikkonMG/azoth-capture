@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"azoth/capture/internal/video"
 )
 
 const DefaultHotkey = "F8"
@@ -14,6 +16,10 @@ const (
 	DefaultVideoHotkey = "F9"
 	VideoAudioGame     = "game" // record the game's own sound
 	VideoAudioNone     = "none" // record no sound
+	// The video format and quality: the most compact format the GPU has, at
+	// the quality clips always had.
+	DefaultVideoCodec   = video.CodecAuto
+	DefaultVideoQuality = video.QualityHigh
 )
 
 type Settings struct {
@@ -28,6 +34,8 @@ type Settings struct {
 	VideoTarget  string `json:"video_target"` // monitor name; empty means the first one
 	VideoAudio   string `json:"video_audio"`  // VideoAudioGame or VideoAudioNone
 	VideoHotkey  string `json:"video_hotkey"`
+	VideoCodec   string `json:"video_codec"`   // one of video.Codecs; "auto" picks the most compact the GPU has
+	VideoQuality string `json:"video_quality"` // one of video.Qualities
 
 	AI AISettings `json:"ai"`
 }
@@ -94,6 +102,12 @@ func Load() Settings {
 	}
 	if s.VideoHotkey == "" {
 		s.VideoHotkey = DefaultVideoHotkey
+	}
+	if s.VideoCodec == "" {
+		s.VideoCodec = DefaultVideoCodec
+	}
+	if s.VideoQuality == "" {
+		s.VideoQuality = DefaultVideoQuality
 	}
 	if s.AI.SampleEvery == 0 {
 		s.AI.SampleEvery = DefaultAISampleEvery

@@ -67,10 +67,11 @@ func TestPruneFramesKeepsOnlyPendingDraftFrames(t *testing.T) {
 
 func TestStatsHitRateBestFirst(t *testing.T) {
 	dir := t.TempDir()
-	for _, d := range []struct{ model, status string }{
-		{"a", StatusRejected}, {"a", StatusAccepted}, {"b", StatusAccepted}, {"b", StatusAccepted},
-	} {
-		if err := CountDecision(dir, d.model, d.status); err != nil {
+	for _, d := range []struct {
+		model              string
+		accepted, rejected int
+	}{{"a", 0, 1}, {"a", 1, 0}, {"b", 2, 0}} {
+		if err := CountDecisions(dir, d.model, d.accepted, d.rejected); err != nil {
 			t.Fatal(err)
 		}
 	}

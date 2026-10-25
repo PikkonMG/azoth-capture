@@ -100,6 +100,7 @@
           <button class="btn small primary" id="btn-new" type="button">New session</button>
         </div>
         <div class="btns">
+          <button class="btn small primary" id="btn-upload-page" type="button" title="Opens projectazoth.com/upload in your web browser">Open upload page</button>
           <button class="btn small" id="btn-split" type="button" title="One upload zip per login. A login is never cut into slices.">Split by connection</button>
           <button class="btn small" id="btn-parts" type="button" hidden>Open parts</button>
         </div>
@@ -111,6 +112,12 @@
           </h3>
           <p class="mstatus" id="ai-progress"></p>
           <p class="err-line" id="ai-err" hidden></p>
+          <div class="draftbar" id="ai-bulk" hidden>
+            <label class="check-field"><input type="checkbox" id="ai-select-all"><span>Select all</span></label>
+            <span class="grow" id="ai-selected-count"></span>
+            <button class="btn small primary" id="btn-ai-accept-sel" type="button">Accept selected</button>
+            <button class="btn small" id="btn-ai-reject-sel" type="button">Reject selected</button>
+          </div>
           <div class="drafts" id="ai-drafts" role="list"></div>
           <p class="legend">Check each draft against its picture. <strong>&#10003;</strong> adds it to steps.json at that moment; <strong>&#10007;</strong> drops it. Edit the text first if it is close but not right.</p>
         </div>
@@ -170,6 +177,21 @@
               <label class="video-opt video-mon" hidden>Monitor</label>
               <select class="val video-opt video-mon" id="s-video-target" hidden></select>
               <span class="video-opt video-mon" hidden></span>
+              <label class="video-opt" hidden>Video format</label>
+              <select class="val video-opt" id="s-video-codec" hidden title="Same picture quality, smaller files: AV1 is the smallest. If the GPU cannot record the chosen format, the next one is used.">
+                <option value="auto">Auto (smallest the GPU can record)</option>
+                <option value="av1">AV1 (smallest files)</option>
+                <option value="hevc">HEVC (smaller files)</option>
+                <option value="h264">H.264 (plays everywhere)</option>
+              </select>
+              <span class="video-opt" hidden></span>
+              <label class="video-opt" hidden>Video quality</label>
+              <select class="val video-opt" id="s-video-quality" hidden>
+                <option value="medium">Medium (smaller)</option>
+                <option value="high">High</option>
+                <option value="very_high">Very high (bigger)</option>
+              </select>
+              <span class="video-opt" hidden></span>
               <label class="video-opt video-sound" hidden>Video sound</label>
               <select class="val video-opt video-sound" id="s-video-audio" hidden>
                 <option value="game">Game sound, no microphone</option>

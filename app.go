@@ -296,6 +296,12 @@ func (a *App) Export() (ExportInfo, error) {
 	return ExportInfo{Dir: dir, State: st}, nil
 }
 
+// uploadPageURL is where the player uploads the zip.
+const uploadPageURL = "https://projectazoth.com/upload"
+
+// OpenUploadPage opens the Project Azoth upload page in the web browser.
+func (a *App) OpenUploadPage() { runtime.BrowserOpenURL(a.ctx, uploadPageURL) }
+
 // OpenUploadZip shows the upload zip in the file manager.
 func (a *App) OpenUploadZip() error {
 	dir := a.j.State().ExportDir

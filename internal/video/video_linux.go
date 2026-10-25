@@ -29,12 +29,11 @@ const (
 	pickPoll    = 200 * time.Millisecond
 
 	// Clip settings: 60 fps, scaled to fit 1920x1080 (4K and ultrawide
-	// monitors would otherwise make very large files), the recorder's "high"
-	// constant-quality preset, Matroska so a clip stays playable if the PC
-	// stops mid-recording.
+	// monitors would otherwise make very large files), Matroska so a clip
+	// stays playable if the PC stops mid-recording. The quality is the
+	// player's choice (Options.Quality), a constant-quality preset.
 	clipFPS       = "60"
 	clipMaxSize   = "1920x1080"
-	clipQuality   = "high"
 	clipContainer = "mkv"
 	portalTarget  = "portal" // the recorder's -w value for the desktop's window picker
 	// gameNameMatch is matched against program names in the recorder's
@@ -176,7 +175,7 @@ func Start(dir string, opt Options, logf func(string)) (*Recording, error) {
 		"-c", clipContainer,
 		"-f", clipFPS,
 		"-s", clipMaxSize,
-		"-q", clipQuality,
+		"-q", qualityOr(opt.Quality),
 		"-v", "no",
 	)
 	// Both options exist in current versions; older ones simply go without.
@@ -185,6 +184,15 @@ func Start(dir string, opt Options, logf func(string)) (*Recording, error) {
 	}
 	if strings.Contains(help, "-write-first-frame-ts") {
 		args = append(args, "-write-first-frame-ts", "yes")
+	}
+	// The chosen format, or the next one the GPU can encode.
+	info, _ := rec.query("--info")
+	chosen := codecOr(opt.Codec)
+	if codec := pickCodec(info, chosen); codec != "" {
+		args = append(args, "-k", codec)
+		if chosen != CodecAuto && codec != chosen {
+			logf("Video: this GPU cannot record " + chosen + "; recording " + codec + " instead.")
+		}
 	}
 	audio := noAudio
 	if opt.GameAudio {

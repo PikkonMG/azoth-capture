@@ -65,6 +65,8 @@ type VideoStatus struct {
 	HotkeyError  string     `json:"hotkey_error"`
 	Clips        int        `json:"clips"`
 	Error        string     `json:"error"`
+	Codec        string     `json:"codec"`   // the chosen format, one of video.Codecs
+	Quality      string     `json:"quality"` // one of video.Qualities
 }
 
 // probeVideo finds out whether the recorder is installed and which monitors it
@@ -91,7 +93,7 @@ func (a *App) VideoState() VideoStatus {
 		Info: a.vid.info, Allowed: set.VideoAllowed, Recording: a.vid.rec != nil,
 		Target: videoTarget(set, a.vid.info), WindowPicked: tokenErr == nil, Audio: set.VideoAudio,
 		Hotkey: set.VideoHotkey, HotkeyError: hkErr,
-		Clips: len(a.vid.clips), Error: a.vid.err,
+		Clips: len(a.vid.clips), Error: a.vid.err, Codec: set.VideoCodec, Quality: set.VideoQuality,
 	}
 }
 
@@ -175,6 +177,22 @@ func (a *App) SetVideoAudio(mode string) (VideoStatus, error) {
 	return a.VideoState(), err
 }
 
+// SetVideoFormat chooses the video format and quality for the next clips.
+// A format the GPU cannot encode falls back when the clip starts.
+func (a *App) SetVideoFormat(codec, quality string) (VideoStatus, error) {
+	if !slices.Contains(video.Codecs, codec) {
+		return a.VideoState(), fmt.Errorf("unknown video format %q", codec)
+	}
+	if !slices.Contains(video.Qualities, quality) {
+		return a.VideoState(), fmt.Errorf("unknown video quality %q", quality)
+	}
+	a.mu.Lock()
+	a.set.VideoCodec, a.set.VideoQuality = codec, quality
+	err := a.saveLocked()
+	a.mu.Unlock()
+	return a.VideoState(), err
+}
+
 // PickVideoWindow opens the desktop's dialog so the player can choose the game
 // window once; later clips record that window without asking.
 func (a *App) PickVideoWindow() (VideoStatus, error) {
@@ -243,6 +261,8 @@ func (a *App) startClipLocked() error {
 		PortalToken: portalTokenPath(),
 		GameAudio:   set.VideoAudio == config.VideoAudioGame,
 		ToolsDir:    toolsDir(),
+		Codec:       set.VideoCodec,
+		Quality:     set.VideoQuality,
 	}
 	if !opt.Window {
 		opt.Monitor = target
