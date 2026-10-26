@@ -675,8 +675,10 @@
     $("ai-panel").hidden = !ready;
     $("tab-ai").hidden = !ready;
     if (!ready && $("tab-ai").getAttribute("aria-selected") === "true") showTab("missions");
+    // Every stopped session gets the box, so AI marks can run on a session
+    // that never had a run (AI was off, or the session was recovered).
     const stopped = S && S.phase === "stopped";
-    $("ai-review").hidden = !ready || !stopped || !(ai.running || ai.result || ai.error);
+    $("ai-review").hidden = !ready || !stopped;
     if (!ready) return;
 
     const s = ai.settings;
@@ -695,6 +697,7 @@
     if (ai.stats && ai.stats.length) $("ai-stats").prepend(h("div", {}, h("b", { text: "Hit rate per model" })));
 
     $("btn-ai-run").hidden = ai.running;
+    $("btn-ai-run").textContent = ai.result ? "Run again" : "Run AI marks";
     $("btn-ai-cancel").hidden = !ai.running;
     const res = ai.result;
     const drafts = (res && res.drafts) || [], notes = (res && res.notes) || []; // older results saved them as null
@@ -713,7 +716,7 @@
     if (!drafts.length) {
       aiRows.clear();
       aiThumbs.clear(); // draft ids start again at 1 in the next run
-      box.replaceChildren(h("div", { class: "empty", text: ai.running ? "Working…" : "No drafts." }));
+      box.replaceChildren(h("div", { class: "empty", text: ai.running ? "Working…" : ai.result ? "No drafts." : "No AI marks for this session yet." }));
       $("ai-bulk").hidden = true;
       return;
     }
