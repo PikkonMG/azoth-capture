@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"azoth/capture/internal/steam"
 )
 
 const (
@@ -41,8 +43,14 @@ const (
 	gameNameMatch = "newworld"
 )
 
-func isGameName(s string) bool {
-	return strings.Contains(strings.ToLower(strings.ReplaceAll(s, " ", "")), gameNameMatch)
+// isGameName reports whether a program name in the recorder's list is the
+// game: it has the game's usual name, or the name of the game file in
+// gameExe without ".exe" (the player may have renamed the file).
+func isGameName(s, gameExe string) bool {
+	plain := func(v string) string { return strings.ToLower(strings.ReplaceAll(v, " ", "")) }
+	name := plain(s)
+	file := plain(strings.TrimSuffix(strings.ToLower(steam.GameFileName(gameExe)), ".exe"))
+	return strings.Contains(name, gameNameMatch) || (file != "" && strings.Contains(name, file))
 }
 
 // recorder is how to run the GPU Screen Recorder command line: installed
@@ -113,13 +121,13 @@ func Probe(string) Info {
 // stream. The app never passes a device source (default_input,
 // default_output, device:...). The game's playback does include what the game
 // plays, other players' voice chat among it; "No sound" leaves all of it out.
-func gameAudioName(rec recorder) string {
+func gameAudioName(rec recorder, gameExe string) string {
 	out, err := rec.query("--list-application-audio")
 	if err != nil {
 		return ""
 	}
 	for _, name := range firstField(out) {
-		if isGameName(name) {
+		if isGameName(name, gameExe) {
 			return name
 		}
 	}
@@ -196,7 +204,7 @@ func Start(dir string, opt Options, logf func(string)) (*Recording, error) {
 	}
 	audio := noAudio
 	if opt.GameAudio {
-		if name := gameAudioName(rec); name != "" {
+		if name := gameAudioName(rec, opt.GameExe); name != "" {
 			audio = "app:" + name
 			args = append(args, "-a", audio)
 		} else {

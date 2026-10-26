@@ -260,6 +260,7 @@ func (a *App) startClipLocked() error {
 		Window:      target == video.WindowTarget,
 		PortalToken: portalTokenPath(),
 		GameAudio:   set.VideoAudio == config.VideoAudioGame,
+		GameExe:     set.ExePath,
 		ToolsDir:    toolsDir(),
 		Codec:       set.VideoCodec,
 		Quality:     set.VideoQuality,

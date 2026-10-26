@@ -947,16 +947,17 @@
     $("s-dir").title = settings.output_dir;
   }
 
-  // Windows starts the game and stops it at the timeout; Linux attaches to the
-  // game you started and only stops recording. The Linux capture writes only
-  // the ledger, so the HTTPS "one per endpoint" option does not apply there.
+  // Linux attaches to the game you started and only stops recording. Windows
+  // does the same when the game already runs; otherwise it starts the game and
+  // closes it at the timeout. An attached capture writes only the ledger, so
+  // the HTTPS "one per endpoint" option does not apply on Linux.
   function applyPlatform(p) {
     platform = p;
     const linux = platform === "linux";
     $("cap-oneperep").closest("label").hidden = linux;
     $("cap-timeout").title = linux
       ? "Seconds after which recording stops. The game keeps running."
-      : "Seconds after which the capture stops and closes the game.";
+      : "Seconds after which the capture stops. A game the app started is closed; a game you started keeps running.";
   }
 
   async function init() {

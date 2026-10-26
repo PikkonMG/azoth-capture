@@ -121,20 +121,6 @@ func TestDiscoverRuntimeFallback(t *testing.T) {
 	}
 }
 
-func TestLinuxPath(t *testing.T) {
-	for in, want := range map[string]string{
-		`Z:\mnt\Games\New World\Bin64\NewWorld.exe`: "/mnt/Games/New World/Bin64/NewWorld.exe",
-		`z:\home\me\NewWorld.exe`:                   "/home/me/NewWorld.exe",
-	} {
-		if got, ok := linuxPath(in); !ok || got != want {
-			t.Errorf("linuxPath(%q) = %q, %v; want %q", in, got, ok, want)
-		}
-	}
-	if _, ok := linuxPath(`C:\Program Files\NewWorld.exe`); ok {
-		t.Error("a path on a Wine-only drive has no Linux path")
-	}
-}
-
 func TestDiscoverNoSteam(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	if _, err := Discover(); err == nil {

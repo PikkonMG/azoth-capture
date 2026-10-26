@@ -206,7 +206,7 @@ func Start(dir string, opt Options, logf func(string)) (*Recording, error) {
 		logf("Video: Windows clips have no sound.")
 	}
 
-	cmd := proc.Hidden(exec.Command(ffmpeg, recordArgs(gfxcaptureSource(), enc, opt.Quality, path)...))
+	cmd := proc.Hidden(exec.Command(ffmpeg, recordArgs(gfxcaptureSource(opt.GameExe), enc, opt.Quality, path)...))
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, err

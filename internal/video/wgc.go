@@ -1,16 +1,18 @@
 package video
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+
+	"azoth/capture/internal/steam"
+)
 
 // The Windows recorder is ffmpeg with its gfxcapture source (Windows Graphics
 // Capture, ffmpeg 8.1 and newer). This file builds its command lines; it has
 // no build tag so the tests run on every system.
 
 const (
-	// gameExeMatch finds the game window by its program name, so the player
-	// never picks a window. gfxcapture takes an ECMAScript regular expression.
-	gameExeMatch = `(?i)^NewWorld\.exe$`
-	wgcFPS       = 60
+	wgcFPS = 60
 	// Clips are scaled to fit 1920x1080, like on Linux.
 	wgcMaxW, wgcMaxH = 1920, 1080
 	progressPeriod   = "0.5" // seconds between -progress reports
@@ -80,11 +82,35 @@ func encoderTestArgs(enc encoder) []string {
 	return append(a, "-f", "null", "-")
 }
 
-// gfxcaptureSource is the filter graph that captures the game window. Its
-// frames live on the GPU; hwdownload brings them back for the encoder.
-func gfxcaptureSource() string {
-	return "gfxcapture=window_exe=" + gameExeMatch + ":max_framerate=" + strconv.Itoa(wgcFPS) +
+// gfxcaptureSource is the filter graph that captures the window of the game
+// in gameExe (the picked file). Its frames live on the GPU; hwdownload brings
+// them back for the encoder.
+func gfxcaptureSource(gameExe string) string {
+	return "gfxcapture=window_exe=" + gameExeMatch(gameExe) + ":max_framerate=" + strconv.Itoa(wgcFPS) +
 		",hwdownload,format=bgra"
+}
+
+// gameExeMatch finds the game window by its program's file name, so the
+// player never picks a window. gfxcapture takes
+// an ECMAScript regular expression. Letters, digits, "-" and "_" match
+// themselves and "." is escaped; any other character matches any one
+// character, so no file name can break the regular expression or the filter
+// graph around it.
+func gameExeMatch(gameExe string) string {
+	var b strings.Builder
+	b.WriteString("(?i)^")
+	for _, c := range steam.GameFileName(gameExe) {
+		switch {
+		case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9', c == '-', c == '_':
+			b.WriteRune(c)
+		case c == '.':
+			b.WriteString(`\.`)
+		default:
+			b.WriteByte('.')
+		}
+	}
+	b.WriteString("$")
+	return b.String()
 }
 
 // recordArgs is the ffmpeg command line for one clip from source (the

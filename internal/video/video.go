@@ -89,6 +89,9 @@ type Options struct {
 	// GameAudio records the game's own playback sound. A microphone is never
 	// recorded; see gameAudioName in the Linux implementation.
 	GameAudio bool
+	// GameExe is the game file picked in Settings. Its name finds the game's
+	// window (Windows) or sound (Linux) when the player renamed the file.
+	GameExe string
 	// ToolsDir holds the tools the app downloaded (ffmpeg on Windows).
 	ToolsDir string
 	// Codec is one of Codecs and Quality one of Qualities.

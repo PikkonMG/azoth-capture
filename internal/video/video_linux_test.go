@@ -191,7 +191,7 @@ func TestNeverRecordsAMicrophoneDevice(t *testing.T) {
 			t.Fatalf("game audio %v: sound sources %q, want %d", gameAudio, sources, want)
 		}
 		for _, src := range sources {
-			if !strings.HasPrefix(src, "app:") || !isGameName(strings.TrimPrefix(src, "app:")) {
+			if !strings.HasPrefix(src, "app:") || !isGameName(strings.TrimPrefix(src, "app:"), "") {
 				t.Errorf("sound source %q is not the game's own playback", src)
 			}
 		}
@@ -321,5 +321,22 @@ func TestAddToIndexMerges(t *testing.T) {
 	}
 	if err := AddToIndex(dir, []Clip{a}); err == nil {
 		t.Error("an unreadable index must be left alone, with an error")
+	}
+}
+
+func TestIsGameName(t *testing.T) {
+	for _, c := range []struct {
+		name, gameExe string
+		want          bool
+	}{
+		{"New World", "", true},
+		{"NewWorld.exe", "/games/NewWorld.exe", true},
+		{"nw-client.exe", "/games/nw-client.exe", true}, // a renamed game file
+		{"nw-client.exe", "", false},
+		{"Firefox", "/games/nw-client.exe", false},
+	} {
+		if got := isGameName(c.name, c.gameExe); got != c.want {
+			t.Errorf("isGameName(%q, %q) = %v, want %v", c.name, c.gameExe, got, c.want)
+		}
 	}
 }

@@ -100,7 +100,7 @@ func TestEncodersAlwaysFallBack(t *testing.T) {
 }
 
 func TestRecordArgs(t *testing.T) {
-	a := recordArgs(gfxcaptureSource(), encodersFor(CodecHEVC)[0], QualityVeryHigh, "/s/gameplay-001.mkv")
+	a := recordArgs(gfxcaptureSource(""), encodersFor(CodecHEVC)[0], QualityVeryHigh, "/s/gameplay-001.mkv")
 	src := a[slices.Index(a, "-i")+1]
 	if !strings.HasPrefix(src, "gfxcapture=window_exe=(?i)^NewWorld\\.exe$:") || !strings.HasSuffix(src, ",hwdownload,format=bgra") {
 		t.Errorf("source = %q", src)
@@ -147,5 +147,19 @@ func TestRecordStopsOnQ(t *testing.T) {
 	}
 	if fi, err := os.Stat(out); err != nil || fi.Size() == 0 {
 		t.Errorf("no clip written: %v", err)
+	}
+}
+
+// A renamed game file still finds its window; characters that mean something
+// in a regular expression or a filter graph match any one character.
+func TestGameExeMatch(t *testing.T) {
+	for gameExe, want := range map[string]string{
+		"":                            `(?i)^NewWorld\.exe$`,
+		"D:/Games/NW/nw-client_2.exe": `(?i)^nw-client_2\.exe$`,
+		"C:/x/My Game (old),v1:2.exe": `(?i)^My.Game..old..v1.2\.exe$`,
+	} {
+		if got := gameExeMatch(gameExe); got != want {
+			t.Errorf("gameExeMatch(%q) = %q, want %q", gameExe, got, want)
+		}
 	}
 }
